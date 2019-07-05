@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>de.schroenser</groupId>
+        <artifactId>parent-pom</artifactId>
+        <version>4</version>
+    </parent>
+
+    <groupId>de.schroenser.discord-bot</groupId>
+    <artifactId>discord-bot</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>A bot for Discord.</description>
+    <url>https://github.com/schroenser/discord-bot</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Sven Haberer</name>
+            <email>schroenser@gmail.com</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/schroenser/discord-bot.git</connection>
+        <developerConnection>scm:git:ssh://github.com/schroenser/discord-bot.git</developerConnection>
+        <url>https://github.com/schroenser/discord-bot</url>
+    </scm>
+</project>
