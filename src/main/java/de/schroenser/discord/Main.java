@@ -12,14 +12,18 @@ public class Main
 {
     public static void main(String[] args) throws LoginException
     {
-        if (args.length == 1)
+        if (args.length == 2)
         {
             String token = args[0];
-            new JDABuilder(AccountType.BOT).setToken(token).build();
+            String guild = args[1];
+            String reportingChannelName = "twitch-ticketschalter";
+            String waitingChannelName = "\uD83C\uDFAC Twitch-Wartezimmer";
+            TicketCounter ticketCounter = new TicketCounter(guild, reportingChannelName, waitingChannelName);
+            new JDABuilder(AccountType.BOT).setToken(token).addEventListener(ticketCounter).build();
         }
         else
         {
-            log.error("Please provide the Discord App token as first parameter");
+            log.error("Please provide the Discord App token and guild");
         }
     }
 }
