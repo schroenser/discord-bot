@@ -18,6 +18,7 @@ public class WaitingMember implements Comparable<WaitingMember>
     @EqualsAndHashCode.Include
     private final Member member;
 
+    private final int graceLeaves;
     private final Instant joined;
     private final Instant left;
     private final Instant mustered;
