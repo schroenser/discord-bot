@@ -18,7 +18,11 @@ public class Main
             String guild = args[1];
             String reportingChannelName = "twitch-ticketschalter";
             String waitingChannelName = "\uD83C\uDFAC Twitch-Wartezimmer";
-            TicketCounter ticketCounter = new TicketCounter(guild, reportingChannelName, waitingChannelName);
+            String liveChannelName = "\uD83D\uDD34\uD83C\uDFAC Twitch-Stream";
+            TicketCounter ticketCounter = new TicketCounter(guild,
+                reportingChannelName,
+                waitingChannelName,
+                liveChannelName);
             new JDABuilder(AccountType.BOT).setToken(token).addEventListener(ticketCounter).build();
         }
         else
