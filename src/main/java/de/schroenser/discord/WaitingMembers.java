@@ -24,10 +24,11 @@ public class WaitingMembers
 {
     private static final Duration MUSTER_GRACE_DURATION = Duration.ofSeconds(15);
     private static final Duration LEAVE_GRACE_DURATION = Duration.ofMinutes(15);
+    private static final int GRACE_LEAVES = 1;
 
     private final Object semaphore = new Object();
     private final Map<Member, WaitingMember> waitingMembers = new HashMap<>();
-    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(3);
+    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(10);
 
     private final Consumer<List<WaitingMember>> onChange;
 
@@ -39,7 +40,11 @@ public class WaitingMembers
                 WaitingMember result;
                 if (value == null)
                 {
-                    result = WaitingMember.builder().member(member).joined(Instant.now()).build();
+                    result = WaitingMember.builder()
+                        .member(member)
+                        .joined(Instant.now())
+                        .graceLeaves(GRACE_LEAVES)
+                        .build();
                 }
                 else
                 {
@@ -55,12 +60,14 @@ public class WaitingMembers
     {
         synchronized (semaphore)
         {
-            waitingMembers.computeIfPresent(member,
-                (key, value) -> value.toBuilder().left(null).mustered(Instant.now()).build());
+            waitingMembers.computeIfPresent(member, (key, value) -> {
+                WaitingMember newValue = value.toBuilder().left(null).mustered(Instant.now()).build();
+                scheduledExecutorService.schedule(this::cleanStaleMembers,
+                    MUSTER_GRACE_DURATION.getSeconds() + 2,
+                    TimeUnit.SECONDS);
+                return newValue;
+            });
             raiseOnChange();
-            scheduledExecutorService.schedule(this::cleanStaleMembers,
-                MUSTER_GRACE_DURATION.getSeconds() + 1,
-                TimeUnit.SECONDS);
         }
     }
 
@@ -68,12 +75,23 @@ public class WaitingMembers
     {
         synchronized (semaphore)
         {
-            waitingMembers.computeIfPresent(member,
-                (key, value) -> value.toBuilder().left(Instant.now()).mustered(null).build());
+            waitingMembers.computeIfPresent(member, (key, value) -> {
+                WaitingMember newValue = null;
+                int graceLeaves = value.getGraceLeaves();
+                if (graceLeaves > 0)
+                {
+                    newValue = value.toBuilder()
+                        .left(Instant.now())
+                        .mustered(null)
+                        .graceLeaves(graceLeaves - 1)
+                        .build();
+                    scheduledExecutorService.schedule(this::cleanStaleMembers,
+                        LEAVE_GRACE_DURATION.getSeconds() + 2,
+                        TimeUnit.SECONDS);
+                }
+                return newValue;
+            });
             raiseOnChange();
-            scheduledExecutorService.schedule(this::cleanStaleMembers,
-                LEAVE_GRACE_DURATION.getSeconds() + 1,
-                TimeUnit.SECONDS);
         }
     }
 
@@ -82,7 +100,7 @@ public class WaitingMembers
         synchronized (semaphore)
         {
             Set<Member> members = ImmutableSet.copyOf(waitingMembers.keySet());
-            members.forEach(member -> waitingMembers.compute(member, (key, value) -> {
+            members.forEach(member -> waitingMembers.computeIfPresent(member, (key, value) -> {
                 WaitingMember result = value;
                 if (value.getMustered() != null &&
                     Instant.now().isAfter(value.getMustered().plus(MUSTER_GRACE_DURATION)) ||
