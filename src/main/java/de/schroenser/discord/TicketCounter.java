@@ -141,7 +141,7 @@ public class TicketCounter extends ListenerAdapter
             {
                 result += "**";
             }
-            result += (i + 1) + ". " + waitingMember.getMember().getEffectiveName() + "\n";
+            result += (i + 1) + ". " + waitingMember.getMember().getEffectiveName();
             if (waitingMember.getMustered() != null)
             {
                 result += "**";
@@ -150,6 +150,7 @@ public class TicketCounter extends ListenerAdapter
             {
                 result += "~~";
             }
+            result += "\n";
         }
 
         message.setText(result);
