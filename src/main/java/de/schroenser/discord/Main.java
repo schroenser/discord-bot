@@ -1,33 +1,32 @@
 package de.schroenser.discord;
 
-import javax.security.auth.login.LoginException;
-
 import lombok.extern.slf4j.Slf4j;
 
-import net.dv8tion.jda.core.AccountType;
-import net.dv8tion.jda.core.JDABuilder;
+import de.schroenser.discord.bot.Bot;
 
 @Slf4j
 public class Main
 {
-    public static void main(String[] args) throws LoginException
+    public static void main(String[] args)
     {
-        if (args.length == 2)
+        try
         {
+            verifyArguments(args);
             String token = args[0];
             String guild = args[1];
-            String reportingChannelName = "twitch-ticketschalter";
-            String waitingChannelName = "\uD83C\uDFAC Twitch-Wartezimmer";
-            String liveChannelName = "\uD83D\uDD34\uD83C\uDFAC Twitch-Stream";
-            TicketCounter ticketCounter = new TicketCounter(guild,
-                reportingChannelName,
-                waitingChannelName,
-                liveChannelName);
-            new JDABuilder(AccountType.BOT).setToken(token).addEventListener(ticketCounter).build();
+            new Bot(token, guild);
         }
-        else
+        catch (Exception e)
         {
-            log.error("Please provide the Discord App token and guild");
+            log.error("Exception", e);
+        }
+    }
+
+    private static void verifyArguments(String[] args)
+    {
+        if (args.length != 2)
+        {
+            throw new IllegalArgumentException("Please provide the Discord App token and guild");
         }
     }
 }
