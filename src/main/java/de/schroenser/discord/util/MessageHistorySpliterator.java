@@ -1,18 +1,24 @@
-package de.schroenser.discord;
+package de.schroenser.discord.util;
 
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.entities.MessageHistory;
 
-@RequiredArgsConstructor
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class MessageHistorySpliterator implements Spliterator<Message>
 {
     private static final int BATCH_RETRIEVE_AMOUNT = 10;
+
+    public static Spliterator<Message> split(MessageHistory messageHistory)
+    {
+        return new MessageHistorySpliterator(messageHistory);
+    }
 
     private final MessageHistory messageHistory;
 
