@@ -124,8 +124,6 @@ class WaitingRoom
             waitingMembers.replaceAll((key, value) -> value.toBuilder()
                 .joined(now.minus(members.indexOf(key), ChronoUnit.SECONDS))
                 .graceLeaves(GRACE_LEAVES)
-                .left(null)
-                .called(null)
                 .build());
             log.debug("Reset complete");
             return getSortedMembers();
