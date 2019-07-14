@@ -9,20 +9,24 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.StreamSupport;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import de.schroenser.discord.util.MessageHistorySpliterator;
 import net.dv8tion.jda.core.JDA;
+import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.MessageHistory;
 import net.dv8tion.jda.core.entities.TextChannel;
-import net.dv8tion.jda.core.entities.User;
 import net.dv8tion.jda.core.entities.VoiceChannel;
 import net.dv8tion.jda.core.events.StatusChangeEvent;
 import net.dv8tion.jda.core.events.guild.voice.GuildVoiceJoinEvent;
 import net.dv8tion.jda.core.events.guild.voice.GuildVoiceLeaveEvent;
 import net.dv8tion.jda.core.events.guild.voice.GuildVoiceMoveEvent;
+import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.core.hooks.ListenerAdapter;
+import net.dv8tion.jda.core.utils.PermissionUtil;
 
+@Slf4j
 @RequiredArgsConstructor
 public class WaitingRoomListener extends ListenerAdapter
 {
@@ -63,10 +67,8 @@ public class WaitingRoomListener extends ListenerAdapter
     {
         MessageHistory messageHistory = getReportingChannel(jda).getHistory();
 
-        User bot = jda.getSelfUser();
-
         StreamSupport.stream(MessageHistorySpliterator.split(messageHistory), false)
-            .filter(message -> message.getAuthor().equals(bot))
+            .filter(message -> message.getMember().equals(message.getGuild().getSelfMember()))
             .forEach(message -> message.delete().complete());
     }
 
@@ -126,6 +128,48 @@ public class WaitingRoomListener extends ListenerAdapter
             {
                 updateMessage(waitingRoom.leave(event.getMember()));
             }
+        }
+    }
+
+    @Override
+    public void onGuildMessageReceived(GuildMessageReceivedEvent event)
+    {
+        if (event.getMessage().getMentionedMembers().contains(event.getGuild().getSelfMember()))
+        {
+            log.debug("Received message {}", event.getMessage().getContentRaw());
+            handleBotCommand(event);
+        }
+    }
+
+    private void handleBotCommand(GuildMessageReceivedEvent event)
+    {
+        if (event.getMessage().getContentRaw().toLowerCase().contains("wartezimmer mischen"))
+        {
+            handleShuffleWaitingRoomCommand(event);
+        }
+        else
+        {
+            event.getChannel().sendMessage(String.format("Hä, <@%d>?", event.getAuthor().getIdLong())).complete();
+        }
+    }
+
+    private void handleShuffleWaitingRoomCommand(GuildMessageReceivedEvent event)
+    {
+        if (PermissionUtil.checkPermission(event.getMember(), Permission.VOICE_MOVE_OTHERS))
+        {
+            event.getChannel()
+                .sendMessage(String.format("Wie du befiehlst, <@%d>!", event.getAuthor().getIdLong()))
+                .complete();
+            log.debug("Shuffling waiting room");
+            updateMessage(waitingRoom.reset());
+        }
+        else
+        {
+            event.getChannel()
+                .sendMessage(String.format("Hahaha...NEIN! Du hast mir gar nichts zu befehlen, <@%d>.",
+                    event.getAuthor().getIdLong()))
+                .complete();
+            log.debug("Insufficient permissions");
         }
     }
 

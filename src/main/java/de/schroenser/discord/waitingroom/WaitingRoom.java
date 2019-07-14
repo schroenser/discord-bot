@@ -2,6 +2,9 @@ package de.schroenser.discord.waitingroom;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -106,6 +109,25 @@ class WaitingRoom
                 }
                 return result;
             }));
+            return getSortedMembers();
+        }
+    }
+
+    List<WaitingMember> reset()
+    {
+        synchronized (semaphore)
+        {
+            log.debug("Reset initialized");
+            List<Member> members = new ArrayList<>(waitingMembers.keySet());
+            Collections.shuffle(members);
+            Instant now = Instant.now();
+            waitingMembers.replaceAll((key, value) -> value.toBuilder()
+                .joined(now.minus(members.indexOf(key), ChronoUnit.SECONDS))
+                .graceLeaves(GRACE_LEAVES)
+                .left(null)
+                .called(null)
+                .build());
+            log.debug("Reset complete");
             return getSortedMembers();
         }
     }
