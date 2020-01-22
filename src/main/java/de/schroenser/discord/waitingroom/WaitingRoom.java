@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -144,7 +145,10 @@ class WaitingRoom
     {
         synchronized (semaphore)
         {
-            return waitingMembers.values().stream().sorted().collect(ImmutableList.toImmutableList());
+            return waitingMembers.values()
+                .stream()
+                .sorted(Comparator.comparing(WaitingMember::getJoined))
+                .collect(ImmutableList.toImmutableList());
         }
     }
 }
