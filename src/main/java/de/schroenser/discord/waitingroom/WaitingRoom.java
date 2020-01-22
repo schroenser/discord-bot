@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +46,12 @@ class WaitingRoom
                 }
                 else
                 {
-                    result = value.toBuilder().left(null).called(null).build();
+                    int graceLeaves = value.getGraceLeaves();
+                    if (value.getLeft() != null)
+                    {
+                        graceLeaves--;
+                    }
+                    result = value.toBuilder().left(null).called(null).graceLeaves(graceLeaves).build();
                     log.debug("Removed flags for member {}", result.getName());
                 }
                 return result;
@@ -77,10 +83,9 @@ class WaitingRoom
         {
             waitingMembers.computeIfPresent(member, (key, value) -> {
                 WaitingMember newValue = null;
-                int graceLeaves = value.getGraceLeaves();
-                if (graceLeaves > 0)
+                if (value.getGraceLeaves() > 0)
                 {
-                    newValue = value.toBuilder().left(Instant.now()).called(null).graceLeaves(graceLeaves - 1).build();
+                    newValue = value.toBuilder().left(Instant.now()).called(null).build();
                     log.debug("Member {} left with grace", newValue.getName());
                 }
                 else
@@ -130,6 +135,23 @@ class WaitingRoom
         }
     }
 
+    List<WaitingMember> sync(List<Member> currentlyWaitingMembers, List<Member> currentlyLiveMembers)
+    {
+        synchronized (semaphore)
+        {
+            log.debug("Sync initialized");
+            currentlyWaitingMembers.forEach(this::join);
+            currentlyLiveMembers.forEach(this::call);
+            waitingMembers.keySet()
+                .stream()
+                .filter(member -> !currentlyWaitingMembers.contains(member))
+                .filter(member -> !currentlyLiveMembers.contains(member))
+                .forEach(this::leave);
+            log.debug("Sync complete");
+            return getSortedMembers();
+        }
+    }
+
     private boolean isCallGraceDurationExpired(WaitingMember value)
     {
         return value.getCalled() != null && Instant.now().isAfter(value.getCalled().plus(CALL_GRACE_DURATION));
@@ -144,7 +166,10 @@ class WaitingRoom
     {
         synchronized (semaphore)
         {
-            return waitingMembers.values().stream().sorted().collect(ImmutableList.toImmutableList());
+            return waitingMembers.values()
+                .stream()
+                .sorted(Comparator.comparing(WaitingMember::getJoined))
+                .collect(ImmutableList.toImmutableList());
         }
     }
 }
