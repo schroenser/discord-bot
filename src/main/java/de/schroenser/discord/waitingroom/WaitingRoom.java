@@ -135,6 +135,23 @@ class WaitingRoom
         }
     }
 
+    List<WaitingMember> sync(List<Member> currentlyWaitingMembers, List<Member> currentlyLiveMembers)
+    {
+        synchronized (semaphore)
+        {
+            log.debug("Sync initialized");
+            currentlyWaitingMembers.forEach(this::join);
+            currentlyLiveMembers.forEach(this::call);
+            waitingMembers.keySet()
+                .stream()
+                .filter(member -> !currentlyWaitingMembers.contains(member))
+                .filter(member -> !currentlyLiveMembers.contains(member))
+                .forEach(this::leave);
+            log.debug("Sync complete");
+            return getSortedMembers();
+        }
+    }
+
     private boolean isCallGraceDurationExpired(WaitingMember value)
     {
         return value.getCalled() != null && Instant.now().isAfter(value.getCalled().plus(CALL_GRACE_DURATION));

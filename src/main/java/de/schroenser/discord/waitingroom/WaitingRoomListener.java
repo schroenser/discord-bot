@@ -15,10 +15,13 @@ import de.schroenser.discord.util.MessageHistorySpliterator;
 import net.dv8tion.jda.core.JDA;
 import net.dv8tion.jda.core.Permission;
 import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.MessageHistory;
 import net.dv8tion.jda.core.entities.TextChannel;
 import net.dv8tion.jda.core.entities.VoiceChannel;
+import net.dv8tion.jda.core.events.ResumedEvent;
 import net.dv8tion.jda.core.events.StatusChangeEvent;
+import net.dv8tion.jda.core.events.guild.GuildReadyEvent;
 import net.dv8tion.jda.core.events.guild.voice.GuildVoiceJoinEvent;
 import net.dv8tion.jda.core.events.guild.voice.GuildVoiceLeaveEvent;
 import net.dv8tion.jda.core.events.guild.voice.GuildVoiceMoveEvent;
@@ -42,51 +45,52 @@ public class WaitingRoomListener extends ListenerAdapter
     private ScheduledFuture<?> cleanStaleMembersTask;
 
     @Override
-    public void onStatusChange(StatusChangeEvent event)
+    public void onGuildReady(GuildReadyEvent event)
     {
-        JDA jda = event.getEntity();
-        JDA.Status newStatus = event.getNewStatus();
-        if (newStatus == JDA.Status.CONNECTED)
+        Guild guild = event.getGuild();
+        if (guild.getName().equals(guildName))
         {
-            reusableMessage = new ReusableMessage(getReportingChannel(jda));
-            deleteBotMessages(jda);
-            addInitialMembers(event.getEntity());
+            TextChannel reportingChannel = getReportingChannel(guild);
+            reusableMessage = new ReusableMessage(reportingChannel);
+            deleteBotMessages(reportingChannel);
+            syncMembers(guild);
             cleanStaleMembersTask = scheduledExecutorService.scheduleAtFixedRate(this::cleanStaleMembers,
                 0,
                 5,
                 TimeUnit.SECONDS);
         }
-        else if (newStatus == JDA.Status.SHUTTING_DOWN)
-        {
-            cleanStaleMembersTask.cancel(true);
-            updateMessage(Collections.emptyList());
-        }
     }
 
-    private void deleteBotMessages(JDA jda)
+    private TextChannel getReportingChannel(Guild guild)
     {
-        MessageHistory messageHistory = getReportingChannel(jda).getHistory();
+        return guild.getTextChannelsByName(REPORTING_CHANNEL_NAME, false).get(0);
+    }
+
+    private void deleteBotMessages(TextChannel reportingChannel)
+    {
+        MessageHistory messageHistory = reportingChannel.getHistory();
 
         StreamSupport.stream(MessageHistorySpliterator.split(messageHistory), false)
             .filter(message -> message.getMember().equals(message.getGuild().getSelfMember()))
             .forEach(message -> message.delete().complete());
     }
 
-    private TextChannel getReportingChannel(JDA jda)
-    {
-        return jda.getGuildsByName(guildName, false).get(0).getTextChannelsByName(REPORTING_CHANNEL_NAME, false).get(0);
-    }
-
-    private void addInitialMembers(JDA jda)
-    {
-        Guild guild = jda.getGuildsByName(guildName, false).get(0);
-        VoiceChannel waitingChannel = guild.getVoiceChannelsByName(WAITING_CHANNEL_NAME, false).get(0);
-        waitingChannel.getMembers().forEach(waitingRoom::join);
-    }
-
     private void cleanStaleMembers()
     {
         updateMessage(waitingRoom.cleanStaleMembers());
+    }
+
+    @Override
+    public void onResume(ResumedEvent event)
+    {
+        syncMembers(event.getJDA().getGuildsByName(guildName, false).get(0));
+    }
+
+    private void syncMembers(Guild guild)
+    {
+        List<Member> currentlyWaitingMembers = getCurrentlyWaitingMembers(guild);
+        List<Member> currentlyLiveMembers = getCurrentlyLiveMembers(guild);
+        updateMessage(waitingRoom.sync(currentlyWaitingMembers, currentlyLiveMembers));
     }
 
     @Override
@@ -131,6 +135,16 @@ public class WaitingRoomListener extends ListenerAdapter
         }
     }
 
+    private boolean isWaitingChannel(VoiceChannel voiceChannel)
+    {
+        return voiceChannel.getName().equals(WAITING_CHANNEL_NAME);
+    }
+
+    private boolean isLiveChannel(VoiceChannel voiceChannel)
+    {
+        return voiceChannel.getName().equals(LIVE_CHANNEL_NAME);
+    }
+
     @Override
     public void onGuildMessageReceived(GuildMessageReceivedEvent event)
     {
@@ -173,14 +187,14 @@ public class WaitingRoomListener extends ListenerAdapter
         }
     }
 
-    private boolean isWaitingChannel(VoiceChannel voiceChannel)
+    @Override
+    public void onStatusChange(StatusChangeEvent event)
     {
-        return voiceChannel.getName().equals(WAITING_CHANNEL_NAME);
-    }
-
-    private boolean isLiveChannel(VoiceChannel voiceChannel)
-    {
-        return voiceChannel.getName().equals(LIVE_CHANNEL_NAME);
+        if (event.getOldStatus() == JDA.Status.CONNECTED && event.getNewStatus() == JDA.Status.SHUTTING_DOWN)
+        {
+            cleanStaleMembersTask.cancel(true);
+            updateMessage(Collections.emptyList());
+        }
     }
 
     private void updateMessage(List<WaitingMember> waitingMembers)
@@ -219,5 +233,17 @@ public class WaitingRoomListener extends ListenerAdapter
         }
 
         return result.toString();
+    }
+
+    private List<Member> getCurrentlyWaitingMembers(Guild guild)
+    {
+        VoiceChannel waitingChannel = guild.getVoiceChannelsByName(WAITING_CHANNEL_NAME, false).get(0);
+        return waitingChannel.getMembers();
+    }
+
+    private List<Member> getCurrentlyLiveMembers(Guild guild)
+    {
+        VoiceChannel waitingChannel = guild.getVoiceChannelsByName(LIVE_CHANNEL_NAME, false).get(0);
+        return waitingChannel.getMembers();
     }
 }
