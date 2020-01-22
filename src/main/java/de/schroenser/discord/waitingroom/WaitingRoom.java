@@ -46,7 +46,12 @@ class WaitingRoom
                 }
                 else
                 {
-                    result = value.toBuilder().left(null).called(null).build();
+                    int graceLeaves = value.getGraceLeaves();
+                    if (value.getLeft() != null)
+                    {
+                        graceLeaves--;
+                    }
+                    result = value.toBuilder().left(null).called(null).graceLeaves(graceLeaves).build();
                     log.debug("Removed flags for member {}", result.getName());
                 }
                 return result;
@@ -78,10 +83,9 @@ class WaitingRoom
         {
             waitingMembers.computeIfPresent(member, (key, value) -> {
                 WaitingMember newValue = null;
-                int graceLeaves = value.getGraceLeaves();
-                if (graceLeaves > 0)
+                if (value.getGraceLeaves() > 0)
                 {
-                    newValue = value.toBuilder().left(Instant.now()).called(null).graceLeaves(graceLeaves - 1).build();
+                    newValue = value.toBuilder().left(Instant.now()).called(null).build();
                     log.debug("Member {} left with grace", newValue.getName());
                 }
                 else
