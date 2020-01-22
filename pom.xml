@@ -10,7 +10,7 @@
 
     <groupId>de.schroenser.discord-bot</groupId>
     <artifactId>discord-bot</artifactId>
-    <version>1.7</version>
+    <version>1.8</version>
 
     <name>${project.groupId}:${project.artifactId}</name>
     <description>A bot for Discord.</description>
@@ -93,7 +93,7 @@
         <repository>
             <id>jcenter</id>
             <name>jcenter-bintray</name>
-            <url>http://jcenter.bintray.com</url>
+            <url>https://jcenter.bintray.com</url>
         </repository>
     </repositories>
 

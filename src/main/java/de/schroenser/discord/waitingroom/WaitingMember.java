@@ -6,14 +6,12 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 
-import org.jetbrains.annotations.NotNull;
-
 import net.dv8tion.jda.core.entities.Member;
 
 @Value
 @Builder(toBuilder = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-class WaitingMember implements Comparable<WaitingMember>
+class WaitingMember
 {
     @EqualsAndHashCode.Include
     private final Member member;
@@ -22,12 +20,6 @@ class WaitingMember implements Comparable<WaitingMember>
     private final Instant joined;
     private final Instant left;
     private final Instant called;
-
-    @Override
-    public int compareTo(@NotNull WaitingMember o)
-    {
-        return getJoined().compareTo(o.getJoined());
-    }
 
     boolean hasLeft()
     {
