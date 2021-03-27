@@ -7,8 +7,8 @@ import java.util.function.Consumer;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.MessageHistory;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageHistory;
 
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class MessageHistorySpliterator implements Spliterator<Message>
@@ -29,7 +29,9 @@ public class MessageHistorySpliterator implements Spliterator<Message>
     {
         if (messages == null || !messages.hasNext())
         {
-            messages = messageHistory.retrievePast(BATCH_RETRIEVE_AMOUNT).complete().iterator();
+            messages = messageHistory.retrievePast(BATCH_RETRIEVE_AMOUNT)
+                .complete()
+                .iterator();
         }
         if (messages.hasNext())
         {
