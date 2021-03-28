@@ -12,22 +12,22 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import de.schroenser.discord.util.MessageHistorySpliterator;
-import net.dv8tion.jda.core.JDA;
-import net.dv8tion.jda.core.Permission;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.entities.MessageHistory;
-import net.dv8tion.jda.core.entities.TextChannel;
-import net.dv8tion.jda.core.entities.VoiceChannel;
-import net.dv8tion.jda.core.events.ResumedEvent;
-import net.dv8tion.jda.core.events.StatusChangeEvent;
-import net.dv8tion.jda.core.events.guild.GuildReadyEvent;
-import net.dv8tion.jda.core.events.guild.voice.GuildVoiceJoinEvent;
-import net.dv8tion.jda.core.events.guild.voice.GuildVoiceLeaveEvent;
-import net.dv8tion.jda.core.events.guild.voice.GuildVoiceMoveEvent;
-import net.dv8tion.jda.core.events.message.guild.GuildMessageReceivedEvent;
-import net.dv8tion.jda.core.hooks.ListenerAdapter;
-import net.dv8tion.jda.core.utils.PermissionUtil;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.MessageHistory;
+import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.VoiceChannel;
+import net.dv8tion.jda.api.events.ResumedEvent;
+import net.dv8tion.jda.api.events.StatusChangeEvent;
+import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent;
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent;
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent;
+import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.internal.utils.PermissionUtil;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -48,7 +48,8 @@ public class WaitingRoomListener extends ListenerAdapter
     public void onGuildReady(GuildReadyEvent event)
     {
         Guild guild = event.getGuild();
-        if (guild.getName().equals(guildName))
+        if (guild.getName()
+            .equals(guildName))
         {
             TextChannel reportingChannel = getReportingChannel(guild);
             reusableMessage = new ReusableMessage(reportingChannel);
@@ -63,7 +64,8 @@ public class WaitingRoomListener extends ListenerAdapter
 
     private TextChannel getReportingChannel(Guild guild)
     {
-        return guild.getTextChannelsByName(REPORTING_CHANNEL_NAME, false).get(0);
+        return guild.getTextChannelsByName(REPORTING_CHANNEL_NAME, false)
+            .get(0);
     }
 
     private void deleteBotMessages(TextChannel reportingChannel)
@@ -71,8 +73,11 @@ public class WaitingRoomListener extends ListenerAdapter
         MessageHistory messageHistory = reportingChannel.getHistory();
 
         StreamSupport.stream(MessageHistorySpliterator.split(messageHistory), false)
-            .filter(message -> message.getMember().equals(message.getGuild().getSelfMember()))
-            .forEach(message -> message.delete().complete());
+            .filter(message -> message.getGuild()
+                .getSelfMember()
+                .equals(message.getMember()))
+            .forEach(message -> message.delete()
+                .complete());
     }
 
     private void cleanStaleMembers()
@@ -83,7 +88,9 @@ public class WaitingRoomListener extends ListenerAdapter
     @Override
     public void onResume(ResumedEvent event)
     {
-        syncMembers(event.getJDA().getGuildsByName(guildName, false).get(0));
+        syncMembers(event.getJDA()
+            .getGuildsByName(guildName, false)
+            .get(0));
     }
 
     private void syncMembers(Guild guild)
@@ -137,33 +144,47 @@ public class WaitingRoomListener extends ListenerAdapter
 
     private boolean isWaitingChannel(VoiceChannel voiceChannel)
     {
-        return voiceChannel.getName().equals(WAITING_CHANNEL_NAME);
+        return voiceChannel.getName()
+            .equals(WAITING_CHANNEL_NAME);
     }
 
     private boolean isLiveChannel(VoiceChannel voiceChannel)
     {
-        return voiceChannel.getName().equals(LIVE_CHANNEL_NAME);
+        return voiceChannel.getName()
+            .equals(LIVE_CHANNEL_NAME);
     }
 
     @Override
     public void onGuildMessageReceived(GuildMessageReceivedEvent event)
     {
-        if (event.getMessage().getMentionedMembers().contains(event.getGuild().getSelfMember()))
+        if (event.getMessage()
+            .getMentionedMembers()
+            .contains(event.getGuild()
+                .getSelfMember()))
         {
-            log.debug("Received message {}", event.getMessage().getContentRaw());
+            log.debug("Received message {}",
+                event.getMessage()
+                    .getContentRaw());
             handleBotCommand(event);
         }
     }
 
     private void handleBotCommand(GuildMessageReceivedEvent event)
     {
-        if (event.getMessage().getContentRaw().toLowerCase().contains("wartezimmer mischen"))
+        if (event.getMessage()
+            .getContentRaw()
+            .toLowerCase()
+            .contains("wartezimmer mischen"))
         {
             handleShuffleWaitingRoomCommand(event);
         }
         else
         {
-            event.getChannel().sendMessage(String.format("Hä, <@%d>?", event.getAuthor().getIdLong())).complete();
+            event.getChannel()
+                .sendMessage(String.format("Hä, <@%d>?",
+                    event.getAuthor()
+                        .getIdLong()))
+                .complete();
         }
     }
 
@@ -172,7 +193,9 @@ public class WaitingRoomListener extends ListenerAdapter
         if (PermissionUtil.checkPermission(event.getMember(), Permission.VOICE_MOVE_OTHERS))
         {
             event.getChannel()
-                .sendMessage(String.format("Wie du befiehlst, <@%d>!", event.getAuthor().getIdLong()))
+                .sendMessage(String.format("Wie du befiehlst, <@%d>!",
+                    event.getAuthor()
+                        .getIdLong()))
                 .complete();
             log.debug("Shuffling waiting room");
             updateMessage(waitingRoom.reset());
@@ -181,7 +204,8 @@ public class WaitingRoomListener extends ListenerAdapter
         {
             event.getChannel()
                 .sendMessage(String.format("Hahaha...NEIN! Du hast mir gar nichts zu befehlen, <@%d>.",
-                    event.getAuthor().getIdLong()))
+                    event.getAuthor()
+                        .getIdLong()))
                 .complete();
             log.debug("Insufficient permissions");
         }
@@ -221,7 +245,9 @@ public class WaitingRoomListener extends ListenerAdapter
             {
                 result.append("**");
             }
-            result.append(i + 1).append(". ").append(waitingMember.getName());
+            result.append(i + 1)
+                .append(". ")
+                .append(waitingMember.getName());
             if (waitingMember.wasCalled())
             {
                 result.append("**");
@@ -237,13 +263,15 @@ public class WaitingRoomListener extends ListenerAdapter
 
     private List<Member> getCurrentlyWaitingMembers(Guild guild)
     {
-        VoiceChannel waitingChannel = guild.getVoiceChannelsByName(WAITING_CHANNEL_NAME, false).get(0);
+        VoiceChannel waitingChannel = guild.getVoiceChannelsByName(WAITING_CHANNEL_NAME, false)
+            .get(0);
         return waitingChannel.getMembers();
     }
 
     private List<Member> getCurrentlyLiveMembers(Guild guild)
     {
-        VoiceChannel waitingChannel = guild.getVoiceChannelsByName(LIVE_CHANNEL_NAME, false).get(0);
+        VoiceChannel waitingChannel = guild.getVoiceChannelsByName(LIVE_CHANNEL_NAME, false)
+            .get(0);
         return waitingChannel.getMembers();
     }
 }

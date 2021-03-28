@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import net.dv8tion.jda.core.entities.Member;
+import net.dv8tion.jda.api.entities.Member;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -51,7 +51,11 @@ class WaitingRoom
                     {
                         graceLeaves--;
                     }
-                    result = value.toBuilder().left(null).called(null).graceLeaves(graceLeaves).build();
+                    result = value.toBuilder()
+                        .left(null)
+                        .called(null)
+                        .graceLeaves(graceLeaves)
+                        .build();
                     log.debug("Removed flags for member {}", result.getName());
                 }
                 return result;
@@ -67,7 +71,10 @@ class WaitingRoom
         synchronized (semaphore)
         {
             waitingMembers.computeIfPresent(member, (key, value) -> {
-                WaitingMember result = value.toBuilder().left(null).called(Instant.now()).build();
+                WaitingMember result = value.toBuilder()
+                    .left(null)
+                    .called(Instant.now())
+                    .build();
                 log.debug("Called member {}", result.getName());
                 return result;
             });
@@ -85,7 +92,10 @@ class WaitingRoom
                 WaitingMember newValue = null;
                 if (value.getGraceLeaves() > 0)
                 {
-                    newValue = value.toBuilder().left(Instant.now()).called(null).build();
+                    newValue = value.toBuilder()
+                        .left(Instant.now())
+                        .called(null)
+                        .build();
                     log.debug("Member {} left with grace", newValue.getName());
                 }
                 else
@@ -154,12 +164,18 @@ class WaitingRoom
 
     private boolean isCallGraceDurationExpired(WaitingMember value)
     {
-        return value.getCalled() != null && Instant.now().isAfter(value.getCalled().plus(CALL_GRACE_DURATION));
+        return value.getCalled() != null &&
+            Instant.now()
+                .isAfter(value.getCalled()
+                    .plus(CALL_GRACE_DURATION));
     }
 
     private boolean isLeaveGraceDurationExpired(WaitingMember value)
     {
-        return value.getLeft() != null && Instant.now().isAfter(value.getLeft().plus(LEAVE_GRACE_DURATION));
+        return value.getLeft() != null &&
+            Instant.now()
+                .isAfter(value.getLeft()
+                    .plus(LEAVE_GRACE_DURATION));
     }
 
     private List<WaitingMember> getSortedMembers()

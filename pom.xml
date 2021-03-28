@@ -5,12 +5,12 @@
     <parent>
         <groupId>de.schroenser</groupId>
         <artifactId>parent-pom</artifactId>
-        <version>4</version>
+        <version>8</version>
     </parent>
 
     <groupId>de.schroenser.discord-bot</groupId>
     <artifactId>discord-bot</artifactId>
-    <version>1.10</version>
+    <version>1.11</version>
 
     <name>${project.groupId}:${project.artifactId}</name>
     <description>A bot for Discord.</description>
@@ -54,7 +54,7 @@
             <dependency>
                 <groupId>net.dv8tion</groupId>
                 <artifactId>JDA</artifactId>
-                <version>3.8.3_464</version>
+                <version>4.2.0_251</version>
             </dependency>
             <dependency>
                 <groupId>org.projectlombok</groupId>
@@ -91,9 +91,9 @@
 
     <repositories>
         <repository>
-            <id>jcenter</id>
-            <name>jcenter-bintray</name>
-            <url>https://jcenter.bintray.com</url>
+            <id>dv8tion</id>
+            <name>m2-dv8tion</name>
+            <url>https://m2.dv8tion.net/releases</url>
         </repository>
     </repositories>
 
