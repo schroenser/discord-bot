@@ -5,12 +5,12 @@
     <parent>
         <groupId>de.schroenser</groupId>
         <artifactId>parent-pom</artifactId>
-        <version>8</version>
+        <version>9</version>
     </parent>
 
     <groupId>de.schroenser.discord-bot</groupId>
     <artifactId>discord-bot</artifactId>
-    <version>1.12</version>
+    <version>1.13</version>
 
     <name>${project.groupId}:${project.artifactId}</name>
     <description>A bot for Discord.</description>
@@ -36,13 +36,6 @@
         <developerConnection>scm:git:ssh://github.com/schroenser/discord-bot.git</developerConnection>
         <url>https://github.com/schroenser/discord-bot</url>
     </scm>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-    </distributionManagement>
 
     <dependencyManagement>
         <dependencies>
@@ -105,30 +98,6 @@
                     <artifactId>maven-assembly-plugin</artifactId>
                     <version>3.1.1</version>
                 </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-gpg-plugin</artifactId>
-                    <version>1.6</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>sign</goal>
-                            </goals>
-                            <phase>verify</phase>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.sonatype.plugins</groupId>
-                    <artifactId>nexus-staging-maven-plugin</artifactId>
-                    <version>1.6.8</version>
-                    <extensions>true</extensions>
-                    <configuration>
-                        <serverId>ossrh</serverId>
-                        <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                        <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                    </configuration>
-                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -155,24 +124,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-            </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>sign</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>
