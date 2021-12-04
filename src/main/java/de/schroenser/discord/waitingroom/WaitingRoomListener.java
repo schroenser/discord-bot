@@ -8,9 +8,10 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.StreamSupport;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import de.schroenser.discord.util.MessageHistorySpliterator;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
@@ -30,7 +31,6 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.internal.utils.PermissionUtil;
 
 @Slf4j
-@RequiredArgsConstructor
 public class WaitingRoomListener extends ListenerAdapter
 {
     private static final long REPORTING_CHANNEL_ID = 597038690321039360L;
@@ -43,6 +43,12 @@ public class WaitingRoomListener extends ListenerAdapter
 
     private ReusableMessage reusableMessage;
     private ScheduledFuture<?> cleanStaleMembersTask;
+
+    @Inject
+    protected WaitingRoomListener(@Named("guild") String guildName)
+    {
+        this.guildName = guildName;
+    }
 
     @Override
     public void onGuildReady(GuildReadyEvent event)

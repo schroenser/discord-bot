@@ -2,7 +2,8 @@ package de.schroenser.discord;
 
 import lombok.extern.slf4j.Slf4j;
 
-import de.schroenser.discord.bot.Bot;
+import com.google.inject.Guice;
+import net.dv8tion.jda.api.JDA;
 
 @Slf4j
 public class Main
@@ -11,22 +12,12 @@ public class Main
     {
         try
         {
-            verifyArguments(args);
-            String token = args[0];
-            String guild = args[1];
-            new Bot(token, guild);
+            Guice.createInjector(new ArgumentsModule(args), new JDAModule(), new EventListenerModule())
+                .getInstance(JDA.class);
         }
         catch (Exception e)
         {
             log.error("Exception", e);
-        }
-    }
-
-    private static void verifyArguments(String[] args)
-    {
-        if (args.length != 2)
-        {
-            throw new IllegalArgumentException("Please provide the Discord App token and guild");
         }
     }
 }
