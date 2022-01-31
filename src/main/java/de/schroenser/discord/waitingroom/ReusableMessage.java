@@ -4,8 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import com.google.common.base.Strings;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.TextChannel;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -13,9 +11,9 @@ class ReusableMessage
 {
     private final Object semaphore = new Object();
 
-    private final TextChannel channel;
+    private final long channelId;
 
-    private Message message;
+    private Long messageId;
 
     void setText(String text)
     {
@@ -23,29 +21,29 @@ class ReusableMessage
         {
             if (Strings.isNullOrEmpty(text))
             {
-                if (message != null)
+                if (messageId != null)
                 {
                     log.debug("Removing message");
-                    message.delete()
+                    messageId.delete()
                         .complete();
-                    message = null;
+                    messageId = null;
                 }
             }
             else
             {
-                if (message == null)
+                if (messageId == null)
                 {
                     log.debug("Creating message with\n{}", text);
-                    message = channel.sendMessage(text)
+                    messageId = channelId.sendMessage(text)
                         .complete();
                 }
                 else
                 {
-                    String currentText = message.getContentRaw();
+                    String currentText = messageId.getContentRaw();
                     if (!text.equals(currentText))
                     {
                         log.debug("Updating message text\n{}\nwith\n{}", currentText, text);
-                        message = message.editMessage(text)
+                        messageId = messageId.editMessage(text)
                             .complete();
                     }
                 }

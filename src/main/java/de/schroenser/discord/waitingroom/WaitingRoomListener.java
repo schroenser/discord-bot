@@ -1,25 +1,22 @@
-package de.schroenser.discord.waitingroom;
+﻿package de.schroenser.discord.waitingroom;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.StreamSupport;
+
+import javax.inject.Inject;
 
 import lombok.extern.slf4j.Slf4j;
 
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
-import de.schroenser.discord.util.MessageHistorySpliterator;
+import org.jooq.generated.tables.records.WaitingMemberRecord;
+
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.AudioChannel;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.MessageHistory;
-import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.ResumedEvent;
 import net.dv8tion.jda.api.events.StatusChangeEvent;
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
@@ -33,75 +30,48 @@ import net.dv8tion.jda.internal.utils.PermissionUtil;
 @Slf4j
 public class WaitingRoomListener extends ListenerAdapter
 {
-    private static final long REPORTING_CHANNEL_ID = 597038690321039360L;
-    private static final long WAITING_CHANNEL_ID = 330853284564959232L;
-    private static final long LIVE_CHANNEL_ID = 334733504103579649L;
-
-    private final String guildName;
-    private final WaitingRoom waitingRoom = new WaitingRoom();
-    private final ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(10);
-
-    private ReusableMessage reusableMessage;
-    private ScheduledFuture<?> cleanStaleMembersTask;
+    private final WaitingRoomConfigurationLoader waitingRoomConfigurationLoader;
+    private final ScheduledFuture<?> cleanStaleMembersTask;
 
     @Inject
-    protected WaitingRoomListener(@Named("guild") String guildName)
+    protected WaitingRoomListener(
+        WaitingRoomConfigurationLoader waitingRoomConfigurationLoader,
+        ScheduledExecutorService scheduledExecutorService,
+        JDA jda)
     {
-        this.guildName = guildName;
+        this.waitingRoomConfigurationLoader = waitingRoomConfigurationLoader;
+        cleanStaleMembersTask = scheduledExecutorService.scheduleAtFixedRate(() -> cleanStaleMembers(jda),
+            0,
+            5,
+            TimeUnit.SECONDS);
     }
 
-    @Override
-    public void onGuildReady(GuildReadyEvent event)
-    {
-        Guild guild = event.getGuild();
-        if (guild.getName()
-            .equals(guildName))
-        {
-            TextChannel reportingChannel = getReportingChannel(guild);
-            reusableMessage = new ReusableMessage(reportingChannel);
-            deleteBotMessages(reportingChannel);
-            syncMembers(guild);
-            cleanStaleMembersTask = scheduledExecutorService.scheduleAtFixedRate(this::cleanStaleMembers,
-                0,
-                5,
-                TimeUnit.SECONDS);
-        }
-    }
-
-    private TextChannel getReportingChannel(Guild guild)
-    {
-        return guild.getTextChannelById(REPORTING_CHANNEL_ID);
-    }
-
-    private void deleteBotMessages(TextChannel reportingChannel)
-    {
-        MessageHistory messageHistory = reportingChannel.getHistory();
-
-        StreamSupport.stream(MessageHistorySpliterator.split(messageHistory), false)
-            .filter(message -> message.getGuild()
-                .getSelfMember()
-                .equals(message.getMember()))
-            .forEach(message -> message.delete()
-                .complete());
-    }
-
-    private void cleanStaleMembers()
+    private void cleanStaleMembers(JDA jda)
     {
         updateMessage(waitingRoom.cleanStaleMembers());
     }
 
     @Override
-    public void onResumed(ResumedEvent event)
+    public void onGuildReady(GuildReadyEvent event)
     {
-        syncMembers(event.getJDA()
-            .getGuildsByName(guildName, false)
-            .get(0));
+        waitingRoomConfigurationLoader.byGuildId(event.getGuild()
+            .getIdLong())
+            .forEach(this::syncMembers);
     }
 
-    private void syncMembers(Guild guild)
+    @Override
+    public void onResumed(ResumedEvent event)
     {
-        List<Member> currentlyWaitingMembers = getCurrentlyWaitingMembers(guild);
-        List<Member> currentlyLiveMembers = getCurrentlyLiveMembers(guild);
+        waitingRoomConfigurationLoader.all()
+            .forEach(this::syncMembers);
+    }
+
+    private void syncMembers(WaitingRoomConfiguration waitingRoomConfiguration)
+    {
+        List<Member> currentlyWaitingMembers = waitingRoomConfiguration.getWaitingChannel()
+            .getMembers();
+        List<Member> currentlyLiveMembers = waitingRoomConfiguration.getLiveChannel()
+            .getMembers();
         updateMessage(waitingRoom.sync(currentlyWaitingMembers, currentlyLiveMembers));
     }
 
@@ -224,14 +194,23 @@ public class WaitingRoomListener extends ListenerAdapter
         }
     }
 
-    private void updateMessage(List<WaitingMember> waitingMembers)
+    private void updateMessage(List<WaitingMemberRecord> waitingMembers)
     {
-        reusableMessage.setText(createMessage(waitingMembers));
+        String message = createMessage(guild, waitingChannelId, waitingMembers);
+
+        reusableMessage.setText(message);
     }
 
-    private String createMessage(List<WaitingMember> waitingMembers)
+    private String createMessage(Guild guild, Long waitingChannelId, List<WaitingMemberRecord> waitingMembers)
     {
         StringBuilder result = new StringBuilder();
+
+        String waitingChannelName = guild.getTextChannelById(waitingChannelId)
+            .getName();
+
+        result.append(waitingChannelName)
+            .append("\n")
+            .append("\n");
 
         for (int i = 0; i < waitingMembers.size(); i++)
         {
@@ -239,40 +218,32 @@ public class WaitingRoomListener extends ListenerAdapter
             {
                 result.append("\n");
             }
-            WaitingMember waitingMember = waitingMembers.get(i);
-            if (waitingMember.hasLeft())
+            WaitingMemberRecord waitingMember = waitingMembers.get(i);
+            boolean hasLeft = waitingMember.getLeaveTimestamp() != null;
+            boolean wasCalled = waitingMember.getCallTimestamp() != null;
+            String name = guild.getMemberById(waitingMember.getMemberId())
+                .getEffectiveName();
+            if (hasLeft)
             {
                 result.append("~~");
             }
-            if (waitingMember.wasCalled())
+            if (wasCalled)
             {
                 result.append("**");
             }
             result.append(i + 1)
                 .append(". ")
-                .append(waitingMember.getName());
-            if (waitingMember.wasCalled())
+                .append(name);
+            if (wasCalled)
             {
                 result.append("**");
             }
-            if (waitingMember.hasLeft())
+            if (hasLeft)
             {
                 result.append("~~");
             }
         }
 
         return result.toString();
-    }
-
-    private List<Member> getCurrentlyWaitingMembers(Guild guild)
-    {
-        AudioChannel channel = guild.getVoiceChannelById(WAITING_CHANNEL_ID);
-        return channel.getMembers();
-    }
-
-    private List<Member> getCurrentlyLiveMembers(Guild guild)
-    {
-        AudioChannel channel = guild.getVoiceChannelById(LIVE_CHANNEL_ID);
-        return channel.getMembers();
     }
 }

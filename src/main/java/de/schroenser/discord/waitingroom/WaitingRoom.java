@@ -16,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import net.dv8tion.jda.api.entities.Member;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -27,22 +26,22 @@ class WaitingRoom
     private static final int GRACE_LEAVES = 1;
 
     private final Object semaphore = new Object();
-    private final Map<Member, WaitingMember> waitingMembers = new HashMap<>();
+    private final Map<Long, WaitingMember> waitingMembers = new HashMap<>();
 
-    List<WaitingMember> join(Member member)
+    List<WaitingMember> join(Long memberId)
     {
         synchronized (semaphore)
         {
-            waitingMembers.compute(member, (key, value) -> {
+            waitingMembers.compute(memberId, (key, value) -> {
                 WaitingMember result;
                 if (value == null)
                 {
                     result = WaitingMember.builder()
-                        .member(member)
+                        .memberId(memberId)
                         .joined(Instant.now())
                         .graceLeaves(GRACE_LEAVES)
                         .build();
-                    log.debug("Added new member {}", result.getName());
+                    log.debug("Added new member {}", result.getMemberId());
                 }
                 else
                 {
@@ -56,7 +55,7 @@ class WaitingRoom
                         .called(null)
                         .graceLeaves(graceLeaves)
                         .build();
-                    log.debug("Removed flags for member {}", result.getName());
+                    log.debug("Removed flags for member {}", result.getMemberId());
                 }
                 return result;
             });
@@ -66,16 +65,16 @@ class WaitingRoom
         }
     }
 
-    List<WaitingMember> call(Member member)
+    List<WaitingMember> call(Long memberId)
     {
         synchronized (semaphore)
         {
-            waitingMembers.computeIfPresent(member, (key, value) -> {
+            waitingMembers.computeIfPresent(memberId, (key, value) -> {
                 WaitingMember result = value.toBuilder()
                     .left(null)
                     .called(Instant.now())
                     .build();
-                log.debug("Called member {}", result.getName());
+                log.debug("Called member {}", result.getMemberId());
                 return result;
             });
             List<WaitingMember> result = getSortedMembers();
@@ -84,11 +83,11 @@ class WaitingRoom
         }
     }
 
-    List<WaitingMember> leave(Member member)
+    List<WaitingMember> leave(Long memberId)
     {
         synchronized (semaphore)
         {
-            waitingMembers.computeIfPresent(member, (key, value) -> {
+            waitingMembers.computeIfPresent(memberId, (key, value) -> {
                 WaitingMember newValue = null;
                 if (value.getGraceLeaves() > 0)
                 {
@@ -96,11 +95,11 @@ class WaitingRoom
                         .left(Instant.now())
                         .called(null)
                         .build();
-                    log.debug("Member {} left with grace", newValue.getName());
+                    log.debug("Member {} left with grace", newValue.getMemberId());
                 }
                 else
                 {
-                    log.debug("Member {} left without grace", value.getName());
+                    log.debug("Member {} left without grace", value.getMemberId());
                 }
                 return newValue;
             });
@@ -114,12 +113,12 @@ class WaitingRoom
     {
         synchronized (semaphore)
         {
-            Set<Member> members = ImmutableSet.copyOf(waitingMembers.keySet());
-            members.forEach(member -> waitingMembers.computeIfPresent(member, (key, value) -> {
+            Set<Long> memberIds = ImmutableSet.copyOf(waitingMembers.keySet());
+            memberIds.forEach(id -> waitingMembers.computeIfPresent(id, (key, value) -> {
                 WaitingMember result = value;
                 if (isCallGraceDurationExpired(value) || isLeaveGraceDurationExpired(value))
                 {
-                    log.debug("Member {} exceeded grace period and is removed", value.getName());
+                    log.debug("Member {} exceeded grace period and is removed", value.getMemberId());
                     result = null;
                 }
                 return result;
@@ -133,11 +132,11 @@ class WaitingRoom
         synchronized (semaphore)
         {
             log.debug("Reset initialized");
-            List<Member> members = new ArrayList<>(waitingMembers.keySet());
-            Collections.shuffle(members);
+            List<Long> memberIds = new ArrayList<>(waitingMembers.keySet());
+            Collections.shuffle(memberIds);
             Instant now = Instant.now();
             waitingMembers.replaceAll((key, value) -> value.toBuilder()
-                .joined(now.minus(members.indexOf(key), ChronoUnit.SECONDS))
+                .joined(now.minus(memberIds.indexOf(key), ChronoUnit.SECONDS))
                 .graceLeaves(GRACE_LEAVES)
                 .build());
             log.debug("Reset complete");
@@ -145,17 +144,17 @@ class WaitingRoom
         }
     }
 
-    List<WaitingMember> sync(List<Member> currentlyWaitingMembers, List<Member> currentlyLiveMembers)
+    List<WaitingMember> sync(List<Long> currentlyWaitingMemberIds, List<Long> currentlyLiveMemberIds)
     {
         synchronized (semaphore)
         {
             log.debug("Sync initialized");
-            currentlyWaitingMembers.forEach(this::join);
-            currentlyLiveMembers.forEach(this::call);
+            currentlyWaitingMemberIds.forEach(this::join);
+            currentlyLiveMemberIds.forEach(this::call);
             waitingMembers.keySet()
                 .stream()
-                .filter(member -> !currentlyWaitingMembers.contains(member))
-                .filter(member -> !currentlyLiveMembers.contains(member))
+                .filter(memberId -> !currentlyWaitingMemberIds.contains(memberId))
+                .filter(memberId -> !currentlyLiveMemberIds.contains(memberId))
                 .forEach(this::leave);
             log.debug("Sync complete");
             return getSortedMembers();

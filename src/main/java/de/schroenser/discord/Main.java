@@ -25,6 +25,7 @@ public class Main
         try (Connection connection = DriverManager.getConnection(DATABASE_URL))
         {
             Guice.createInjector(new ArgumentsModule(args),
+                new ExecutorModule(),
                 new JooqModule(connection),
                 new JDAModule(),
                 new EventListenerModule())
