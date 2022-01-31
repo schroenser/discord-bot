@@ -14,18 +14,18 @@ import lombok.extern.slf4j.Slf4j;
 import de.schroenser.discord.util.MessageHistorySpliterator;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.AudioChannel;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageHistory;
 import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.entities.VoiceChannel;
 import net.dv8tion.jda.api.events.ResumedEvent;
 import net.dv8tion.jda.api.events.StatusChangeEvent;
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent;
-import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.internal.utils.PermissionUtil;
 
@@ -86,7 +86,7 @@ public class WaitingRoomListener extends ListenerAdapter
     }
 
     @Override
-    public void onResume(ResumedEvent event)
+    public void onResumed(ResumedEvent event)
     {
         syncMembers(event.getJDA()
             .getGuildsByName(guildName, false)
@@ -142,20 +142,20 @@ public class WaitingRoomListener extends ListenerAdapter
         }
     }
 
-    private boolean isWaitingChannel(VoiceChannel voiceChannel)
+    private boolean isWaitingChannel(AudioChannel audioChannel)
     {
-        return voiceChannel.getName()
+        return audioChannel.getName()
             .equals(WAITING_CHANNEL_NAME);
     }
 
-    private boolean isLiveChannel(VoiceChannel voiceChannel)
+    private boolean isLiveChannel(AudioChannel audioChannel)
     {
-        return voiceChannel.getName()
+        return audioChannel.getName()
             .equals(LIVE_CHANNEL_NAME);
     }
 
     @Override
-    public void onGuildMessageReceived(GuildMessageReceivedEvent event)
+    public void onMessageReceived(MessageReceivedEvent event)
     {
         if (event.getMessage()
             .getMentionedMembers()
@@ -169,7 +169,7 @@ public class WaitingRoomListener extends ListenerAdapter
         }
     }
 
-    private void handleBotCommand(GuildMessageReceivedEvent event)
+    private void handleBotCommand(MessageReceivedEvent event)
     {
         if (event.getMessage()
             .getContentRaw()
@@ -188,7 +188,7 @@ public class WaitingRoomListener extends ListenerAdapter
         }
     }
 
-    private void handleShuffleWaitingRoomCommand(GuildMessageReceivedEvent event)
+    private void handleShuffleWaitingRoomCommand(MessageReceivedEvent event)
     {
         if (PermissionUtil.checkPermission(event.getMember(), Permission.VOICE_MOVE_OTHERS))
         {
@@ -263,15 +263,15 @@ public class WaitingRoomListener extends ListenerAdapter
 
     private List<Member> getCurrentlyWaitingMembers(Guild guild)
     {
-        VoiceChannel waitingChannel = guild.getVoiceChannelsByName(WAITING_CHANNEL_NAME, false)
+        AudioChannel channel = guild.getVoiceChannelsByName(WAITING_CHANNEL_NAME, false)
             .get(0);
-        return waitingChannel.getMembers();
+        return channel.getMembers();
     }
 
     private List<Member> getCurrentlyLiveMembers(Guild guild)
     {
-        VoiceChannel waitingChannel = guild.getVoiceChannelsByName(LIVE_CHANNEL_NAME, false)
+        AudioChannel channel = guild.getVoiceChannelsByName(LIVE_CHANNEL_NAME, false)
             .get(0);
-        return waitingChannel.getMembers();
+        return channel.getMembers();
     }
 }
