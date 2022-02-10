@@ -35,7 +35,7 @@ public class WaitingRoomListener extends ListenerAdapter
 {
     private static final String REPORTING_CHANNEL_NAME = "twitch-ticketschalter";
     private static final String WAITING_CHANNEL_NAME = "\uD83C\uDFAC Twitch-Wartezimmer";
-    private static final String LIVE_CHANNEL_NAME = "\uD83D\uDD34 Twitch-Stream";
+    private static final String LIVE_CHANNEL_NAME = "\uD83D\uDD34Twitch-Stream";
 
     private final String guildName;
     private final WaitingRoom waitingRoom = new WaitingRoom();
