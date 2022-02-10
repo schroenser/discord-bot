@@ -3,10 +3,7 @@ name: Deploy
 on:
   push:
     branches:
-      - 'master'
-      - 'develop'
-      - 'release/*'
-      - 'hotfix/*'
+      - '**'
 
 jobs:
   build:
@@ -27,9 +24,6 @@ jobs:
         with:
           java-version: '11'
           distribution: 'adopt'
-          server-id: ossrh
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
       - name: Set up Toolchain
         shell: bash
         run: |
@@ -49,10 +43,14 @@ jobs:
             </toolchain>
           </toolchains>
           EOF
+      - name: Extract branch name
+        id: branch
+        shell: bash
+        run: echo "::set-output name=name::$(echo ${GITHUB_REF#refs/heads/} | sed 's/[^a-zA-Z0-9]/-/g')"
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Deploy
-        run: mvn -B -U deploy -DperformRelease=true
-        env:
-          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
-          SIGN_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
-          SIGN_KEY_PASS: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+        run: mvn -B -U -DperformRelease=true -Djib.to.tags=${{ steps.branch.outputs.name }} verify
