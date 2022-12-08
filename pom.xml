@@ -5,7 +5,7 @@
     <parent>
         <groupId>de.schroenser</groupId>
         <artifactId>parent-pom</artifactId>
-        <version>9</version>
+        <version>11</version>
     </parent>
 
     <groupId>de.schroenser.discord-bot</groupId>
