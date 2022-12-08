@@ -33,9 +33,9 @@ import net.dv8tion.jda.internal.utils.PermissionUtil;
 @RequiredArgsConstructor
 public class WaitingRoomListener extends ListenerAdapter
 {
-    private static final String REPORTING_CHANNEL_NAME = "twitch-ticketschalter";
-    private static final String WAITING_CHANNEL_NAME = "\uD83C\uDFAC Twitch-Wartezimmer";
-    private static final String LIVE_CHANNEL_NAME = "\uD83D\uDD34Twitch-Stream";
+    private static final long REPORTING_CHANNEL_ID = 597038690321039360L;
+    private static final long WAITING_CHANNEL_ID = 330853284564959232L;
+    private static final long LIVE_CHANNEL_ID = 334733504103579649L;
 
     private final String guildName;
     private final WaitingRoom waitingRoom = new WaitingRoom();
@@ -64,8 +64,7 @@ public class WaitingRoomListener extends ListenerAdapter
 
     private TextChannel getReportingChannel(Guild guild)
     {
-        return guild.getTextChannelsByName(REPORTING_CHANNEL_NAME, false)
-            .get(0);
+        return guild.getTextChannelById(REPORTING_CHANNEL_ID);
     }
 
     private void deleteBotMessages(TextChannel reportingChannel)
@@ -144,14 +143,12 @@ public class WaitingRoomListener extends ListenerAdapter
 
     private boolean isWaitingChannel(AudioChannel audioChannel)
     {
-        return audioChannel.getName()
-            .equals(WAITING_CHANNEL_NAME);
+        return audioChannel.getIdLong() == WAITING_CHANNEL_ID;
     }
 
     private boolean isLiveChannel(AudioChannel audioChannel)
     {
-        return audioChannel.getName()
-            .equals(LIVE_CHANNEL_NAME);
+        return audioChannel.getIdLong() == LIVE_CHANNEL_ID;
     }
 
     @Override
@@ -263,15 +260,13 @@ public class WaitingRoomListener extends ListenerAdapter
 
     private List<Member> getCurrentlyWaitingMembers(Guild guild)
     {
-        AudioChannel channel = guild.getVoiceChannelsByName(WAITING_CHANNEL_NAME, false)
-            .get(0);
+        AudioChannel channel = guild.getVoiceChannelById(WAITING_CHANNEL_ID);
         return channel.getMembers();
     }
 
     private List<Member> getCurrentlyLiveMembers(Guild guild)
     {
-        AudioChannel channel = guild.getVoiceChannelsByName(LIVE_CHANNEL_NAME, false)
-            .get(0);
+        AudioChannel channel = guild.getVoiceChannelById(LIVE_CHANNEL_ID);
         return channel.getMembers();
     }
 }
