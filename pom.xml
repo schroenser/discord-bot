@@ -5,12 +5,12 @@
     <parent>
         <groupId>de.schroenser</groupId>
         <artifactId>parent-pom</artifactId>
-        <version>9</version>
+        <version>11</version>
     </parent>
 
     <groupId>de.schroenser.discord-bot</groupId>
     <artifactId>discord-bot</artifactId>
-    <version>1.17</version>
+    <version>1.18</version>
 
     <name>${project.groupId}:${project.artifactId}</name>
     <description>A bot for Discord.</description>
