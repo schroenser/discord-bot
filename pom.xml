@@ -5,12 +5,12 @@
     <parent>
         <groupId>de.schroenser</groupId>
         <artifactId>parent-pom</artifactId>
-        <version>11</version>
+        <version>14</version>
     </parent>
 
     <groupId>de.schroenser.discord-bot</groupId>
     <artifactId>discord-bot</artifactId>
-    <version>1.18</version>
+    <version>1.19</version>
 
     <name>${project.groupId}:${project.artifactId}</name>
     <description>A bot for Discord.</description>
@@ -36,28 +36,34 @@
         <developerConnection>scm:git:ssh://github.com/schroenser/discord-bot.git</developerConnection>
         <url>https://github.com/schroenser/discord-bot</url>
     </scm>
+    <properties>
+        <guava.version>31.1-jre</guava.version>
+        <jda.version>5.0.0-alpha.11</jda.version>
+        <lombok.version>1.18.22</lombok.version>
+        <slf4j.version>1.7.36</slf4j.version>
+    </properties>
 
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>31.0.1-jre</version>
+                <version>${guava.version}</version>
             </dependency>
             <dependency>
                 <groupId>net.dv8tion</groupId>
                 <artifactId>JDA</artifactId>
-                <version>5.0.0-alpha.5</version>
+                <version>${jda.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
-                <version>1.18.22</version>
+                <version>${lombok.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-simple</artifactId>
-                <version>1.7.35</version>
+                <version>${slf4j.version}</version>
                 <scope>runtime</scope>
             </dependency>
         </dependencies>
@@ -88,7 +94,7 @@
                 <plugin>
                     <groupId>com.google.cloud.tools</groupId>
                     <artifactId>jib-maven-plugin</artifactId>
-                    <version>3.2.0</version>
+                    <version>3.3.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
