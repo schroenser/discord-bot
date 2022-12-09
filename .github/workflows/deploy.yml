@@ -27,7 +27,7 @@ jobs:
       - name: Extract branch name
         id: branch
         shell: bash
-        run: echo "::set-output name=name::$(echo ${GITHUB_REF#refs/heads/} | sed 's/[^a-zA-Z0-9]/-/g')"
+        run: echo "name=$(echo ${GITHUB_REF#refs/heads/} | sed 's/[^a-zA-Z0-9]/-/g')" >> $GITHUB_OUTPUT
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
