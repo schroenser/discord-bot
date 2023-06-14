@@ -37,7 +37,7 @@
         <url>https://github.com/schroenser/discord-bot</url>
     </scm>
     <properties>
-        <guava.version>31.1-jre</guava.version>
+        <guava.version>32.0.0-jre</guava.version>
         <jda.version>5.0.0-alpha.11</jda.version>
         <lombok.version>1.18.22</lombok.version>
         <slf4j.version>1.7.36</slf4j.version>
