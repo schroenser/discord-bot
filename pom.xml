@@ -40,7 +40,7 @@
         <guava.version>31.1-jre</guava.version>
         <jda.version>5.0.0-alpha.11</jda.version>
         <lombok.version>1.18.22</lombok.version>
-        <slf4j.version>1.7.36</slf4j.version>
+        <slf4j.version>2.0.17</slf4j.version>
     </properties>
 
     <dependencyManagement>
