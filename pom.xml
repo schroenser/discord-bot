@@ -11,7 +11,7 @@
 
     <groupId>de.schroenser.discord-bot</groupId>
     <artifactId>discord-bot</artifactId>
-    <version>1.20-SNAPSHOT</version>
+    <version>1.20</version>
 
     <name>${project.groupId}:${project.artifactId}</name>
     <description>A bot for Discord.</description>
