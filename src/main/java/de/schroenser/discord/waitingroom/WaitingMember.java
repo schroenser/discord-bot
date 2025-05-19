@@ -14,12 +14,12 @@ import net.dv8tion.jda.api.entities.Member;
 class WaitingMember
 {
     @EqualsAndHashCode.Include
-    private final Member member;
+    Member member;
 
-    private final int graceLeaves;
-    private final Instant joined;
-    private final Instant left;
-    private final Instant called;
+    int graceLeaves;
+    Instant joined;
+    Instant left;
+    Instant called;
 
     boolean hasLeft()
     {
