@@ -11,21 +11,21 @@ import java.util.stream.StreamSupport;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.jetbrains.annotations.NotNull;
+
 import de.schroenser.discord.util.MessageHistorySpliterator;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.AudioChannel;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageHistory;
-import net.dv8tion.jda.api.entities.TextChannel;
-import net.dv8tion.jda.api.events.ResumedEvent;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel;
 import net.dv8tion.jda.api.events.StatusChangeEvent;
 import net.dv8tion.jda.api.events.guild.GuildReadyEvent;
-import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent;
-import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent;
-import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent;
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.session.SessionResumeEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.internal.utils.PermissionUtil;
 
@@ -85,11 +85,11 @@ public class WaitingRoomListener extends ListenerAdapter
     }
 
     @Override
-    public void onResumed(ResumedEvent event)
+    public void onSessionResume(@NotNull SessionResumeEvent event)
     {
         syncMembers(event.getJDA()
             .getGuildsByName(guildName, false)
-            .get(0));
+            .getFirst());
     }
 
     private void syncMembers(Guild guild)
@@ -100,62 +100,45 @@ public class WaitingRoomListener extends ListenerAdapter
     }
 
     @Override
-    public void onGuildVoiceJoin(GuildVoiceJoinEvent event)
+    public void onGuildVoiceUpdate(@NotNull GuildVoiceUpdateEvent event)
     {
-        if (isWaitingChannel(event.getChannelJoined()))
-        {
-            updateMessage(waitingRoom.join(event.getMember()));
-        }
-        if (isLiveChannel(event.getChannelJoined()))
-        {
-            updateMessage(waitingRoom.call(event.getMember()));
-        }
-    }
+        AudioChannel channelJoined = event.getChannelJoined();
+        AudioChannel channelLeft = event.getChannelLeft();
+        Member member = event.getMember();
 
-    @Override
-    public void onGuildVoiceLeave(GuildVoiceLeaveEvent event)
-    {
-        if (isWaitingChannel(event.getChannelLeft()) || isLiveChannel(event.getChannelLeft()))
+        if (isWaitingChannel(channelJoined))
         {
-            updateMessage(waitingRoom.leave(event.getMember()));
+            updateMessage(waitingRoom.join(member));
         }
-    }
 
-    @Override
-    public void onGuildVoiceMove(GuildVoiceMoveEvent event)
-    {
-        if (isWaitingChannel(event.getChannelJoined()))
+        if (isLiveChannel(channelJoined))
         {
-            updateMessage(waitingRoom.join(event.getMember()));
+            updateMessage(waitingRoom.call(member));
         }
-        if (isWaitingChannel(event.getChannelLeft()))
+
+        if (isWaitingChannel(channelLeft) && !isLiveChannel(channelJoined) ||
+            isLiveChannel(channelLeft) && !isWaitingChannel(channelJoined))
         {
-            if (isLiveChannel(event.getChannelJoined()))
-            {
-                updateMessage(waitingRoom.call(event.getMember()));
-            }
-            else
-            {
-                updateMessage(waitingRoom.leave(event.getMember()));
-            }
+            updateMessage(waitingRoom.leave(member));
         }
     }
 
     private boolean isWaitingChannel(AudioChannel audioChannel)
     {
-        return audioChannel.getIdLong() == WAITING_CHANNEL_ID;
+        return audioChannel != null && audioChannel.getIdLong() == WAITING_CHANNEL_ID;
     }
 
     private boolean isLiveChannel(AudioChannel audioChannel)
     {
-        return audioChannel.getIdLong() == LIVE_CHANNEL_ID;
+        return audioChannel != null && audioChannel.getIdLong() == LIVE_CHANNEL_ID;
     }
 
     @Override
     public void onMessageReceived(MessageReceivedEvent event)
     {
         if (event.getMessage()
-            .getMentionedMembers()
+            .getMentions()
+            .getMembers()
             .contains(event.getGuild()
                 .getSelfMember()))
         {
