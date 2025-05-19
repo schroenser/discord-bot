@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import com.google.common.base.Strings;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 
 @Slf4j
 @RequiredArgsConstructor

@@ -1,6 +1,4 @@
-.classpath
-.project
-.settings
-.idea
+.idea/*
+!.idea/codeStyles
+!.idea/codeStyles/*
 target
-*.iml
